@@ -1,0 +1,74 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Deadline Tracker</title>
+    <style>
+        body { font-family: Arial, sans-serif; max-width: 500px; margin: 40px auto; }
+        input { display: block; margin: 10px 0; padding: 8px; width: 100%; }
+        button { padding: 8px 16px; }
+        li { margin: 10px 0; padding: 10px; background: #f0f0f0; border-radius: 5px; }
+        .done { text-decoration: line-through; color: gray; }
+    </style>
+</head>
+<body>
+
+<h1>Deadline Tracker</h1>
+
+<form id="deadlineForm">
+    <input type="text" id="title" placeholder="Assignment title" required>
+    <input type="date" id="due_date" required>
+    <button type="submit">Add Deadline</button>
+</form>
+
+<ul id="deadlineList"></ul>
+
+<script>
+const API_URL = "http://127.0.0.1:5000/deadlines";
+
+// Fetch and display all deadlines
+async function loadDeadlines() {
+    const response = await fetch(API_URL);
+    const deadlines = await response.json();
+
+    const list = document.getElementById("deadlineList");
+    list.innerHTML = "";
+
+    deadlines.forEach(d => {
+        const li = document.createElement("li");
+        li.className = d.status === "done" ? "done" : "";
+        li.innerHTML = `
+            <strong>${d.title}</strong> — due ${d.due_date} [${d.status}]
+            ${d.status !== "done" ? `<button onclick="markDone(${d.id})">Mark Done</button>` : ""}
+        `;
+        list.appendChild(li);
+    });
+}
+
+// Add a new deadline
+document.getElementById("deadlineForm").addEventListener("submit", async (e) => {
+    e.preventDefault();
+    const title = document.getElementById("title").value;
+    const due_date = document.getElementById("due_date").value;
+
+    await fetch(API_URL, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ title, due_date })
+    });
+
+    document.getElementById("deadlineForm").reset();
+    loadDeadlines();
+});
+
+// Mark a deadline as done
+async function markDone(id) {
+    await fetch(`${API_URL}/${id}`, { method: "PUT" });
+    loadDeadlines();
+}
+
+// Load deadlines when page opens
+loadDeadlines();
+</script>
+
+</body>
+</html>
